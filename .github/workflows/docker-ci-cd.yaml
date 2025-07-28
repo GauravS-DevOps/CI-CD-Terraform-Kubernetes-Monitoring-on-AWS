@@ -36,4 +36,4 @@
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             kubectl rollout restart deployment/devops-app
-            imagePullPolicy: Always   
+        
