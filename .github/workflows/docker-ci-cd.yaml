@@ -28,11 +28,12 @@
       - name: Push Docker image
         run: docker push gauravsdevops/devops-app:latest
 
-      - name: Restart Kubernetes Pods (via SSH)
+      - name: Restart Kubernetes Deployment
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            kubectl set image deployment/devops-app devops-app=gauravsdevops/devops-app:latest
+            kubectl rollout restart deployment/devops-app
+            imagePullPolicy: Always   
