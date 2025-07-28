@@ -1,0 +1,35 @@
+# Professor’s Note: This is your **assembly line supervisor (CI/CD)**.
+# When you push code → it builds a ship (Docker image) → pushes it → updates your fleet (K8s).
+
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build Docker image
+      run: docker build -t gauravsdevops/devops-app:latest ./app
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+    - name: Push Docker image
+      run: docker push your-dockerhub-username/devops-app:latest
+
+    - name: Restart Kubernetes Pods (via SSH)
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          kubectl set image deployment/devops-app devops-app=your-dockerhub-username/devops-app:latest
