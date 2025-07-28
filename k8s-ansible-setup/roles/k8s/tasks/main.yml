@@ -10,15 +10,33 @@
     enabled: yes
     state: started
 
-- name: Add Kubernetes repo key
-  apt_key:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+- name: Install dependencies for Kubernetes repo
+  apt:
+    name: "{{ item }}"
     state: present
+    update_cache: yes
+  loop:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
 
-- name: Add Kubernetes repo
-  apt_repository:
-    repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
-    state: present
+- name: Create keyring directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Kubernetes GPG key
+  shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
 
 - name: Install Kubernetes components
   apt:
@@ -31,15 +49,8 @@
     - kubectl
 
 - name: Hold Kubernetes packages
-  apt:
-    name: "{{ item }}"
-    state: present
-    update_cache: yes
-    allow_unauthenticated: yes
-  loop:
-    - kubelet
-    - kubeadm
-    - kubectl
+  shell: |
+    apt-mark hold kubelet kubeadm kubectl
 
 - name: Disable swap temporarily
   command: swapoff -a
@@ -50,8 +61,11 @@
     regexp: '^([^#].* swap )'
     replace: '#\1'
 
+- name: reset kubeadm
+  command: kubeadm reset -f
+
 - name: Initialize Kubernetes Cluster
-  command: kubeadm init --pod-network-cidr=10.244.0.0/16
+  command: kubeadm init --control-plane-endpoint=172.31.84.54 --pod-network-cidr=10.244.0.0/16
   register: init_output
   failed_when: "'already initialized' not in init_output.stderr and init_output.rc != 0"
 
