@@ -1,48 +1,95 @@
-  # Professor’s Note: This is your **assembly line supervisor (CI/CD)**.
-  # When you push code → it builds a ship (Docker image) → pushes it → updates your fleet (K8s).
+  # # Professor’s Note: This is your **assembly line supervisor (CI/CD)**.
+  # # When you push code → it builds a ship (Docker image) → pushes it → updates your fleet (K8s).
 
-  name: Build and Deploy
+  # name: Build and Deploy
 
-  on:
-    push:
-      branches:
-        - main
+  # on:
+  #   push:
+  #     branches:
+  #       - main
 
-  jobs:
-    deploy:
-      runs-on: ubuntu-latest
+  # jobs:
+  #   deploy:
+  #     runs-on: ubuntu-latest
 
-      steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  #     steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+  #     - name: Login to Docker Hub
+  #       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t gauravsdevops/devops-app:latest ./app
+  #     # - name: Build Docker image
+  #     #   run: docker build -t gauravsdevops/devops-app:latest ./app
 
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+  #     - name: Login to Docker Hub
+  #       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Push Docker image
-        run: docker push gauravsdevops/devops-app:latest
+  #     - name: Build Docker image
+  #       run: docker build -t gauravsdevops/devops-app:${{ github.sha }} ./app
 
-      # - name: Restart Kubernetes Deployment
-      #   uses: appleboy/ssh-action@v1.0.0
-      #   with:
-      #     host: ${{ secrets.EC2_HOST }}
-      #     username: ubuntu
-      #     key: ${{ secrets.EC2_SSH_KEY }}
-      #     script: |
-      #       kubectl rollout restart deployment/devops-app
+  #     - name: Push Docker image
+  #       run: docker push gauravsdevops/devops-app:${{ github.sha }}
 
-      # - name: Restart Kubernetes Deployment
-      #   uses: appleboy/ssh-action@v1.0.0
-      #   with:
-      #     host: ${{ secrets.SERVER_IP }}
-      #     username: your-username
-      #     password: ${{ secrets.SERVER_PASSWORD }}
-      #     port: 22
-      #     script: |
-      #       kubectl rollout restart deployment/devops-app
+
+  #     # - name: Push Docker image
+  #     #   run: docker push gauravsdevops/devops-app:latest
+
+  #     # - name: Restart Kubernetes Deployment
+  #     #   uses: appleboy/ssh-action@v1.0.0
+  #     #   with:
+  #     #     host: ${{ secrets.EC2_HOST }}
+  #     #     username: ubuntu
+  #     #     key: ${{ secrets.EC2_SSH_KEY }}
+  #     #     script: |
+  #     #       kubectl rollout restart deployment/devops-app
+
+  #     # - name: Restart Kubernetes Deployment
+  #     #   uses: appleboy/ssh-action@v1.0.0
+  #     #   with:
+  #     #     host: ${{ secrets.SERVER_IP }}
+  #     #     username: your-username
+  #     #     password: ${{ secrets.SERVER_PASSWORD }}
+  #     #     port: 22
+  #     #     script: |
+  #     #       kubectl rollout restart deployment/devops-app
+
+
+
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+    - name: Build Docker image with commit SHA tag
+      run: docker build -t gauravsdevops/devops-app:${{ github.sha }} ./app
+
+    - name: Push Docker image to Docker Hub
+      run: docker push gauravsdevops/devops-app:${{ github.sha }}
+
+    # 🔥 KEY STEP: Update image tag in deployment.yaml
+    - name: Update deployment.yaml with new image tag
+      run: |
+        sed -i "s|image:.*|image: gauravsdevops/devops-app:${{ github.sha }}|" dev/deployment.yaml
+
+    # ✅ Commit updated deployment.yaml back to GitHub
+    - name: Commit and push updated deployment.yaml
+      run: |
+        git config --global user.name "CI Bot"
+        git config --global user.email "ci@example.com"
+        git add dev/deployment.yaml
+        git commit -m "Update image to ${{ github.sha }}"
+        git push

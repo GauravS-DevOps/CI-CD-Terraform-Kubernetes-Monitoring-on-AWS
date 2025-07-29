@@ -12,6 +12,9 @@ spec:
       labels:
         app: devops-app
     spec:
+      # containers:
+      # - name: devops-app
+      #   image: gauravsdevops/devops-app:latest
       containers:
       - name: devops-app
         image: gauravsdevops/devops-app:latest
