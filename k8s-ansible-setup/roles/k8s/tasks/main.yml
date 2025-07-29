@@ -1,14 +1,14 @@
-- name: Install Docker
-  apt:
-    name: docker.io
-    state: present
-    update_cache: yes
+# - name: Install Docker
+#   apt:
+#     name: docker.io
+#     state: present
+#     update_cache: yes
 
-- name: Enable Docker
-  systemd:
-    name: docker
-    enabled: yes
-    state: started
+# - name: Enable Docker
+#   systemd:
+#     name: docker
+#     enabled: yes
+#     state: started
 
 - name: Install dependencies for Kubernetes repo
   apt:
@@ -65,7 +65,9 @@
   command: kubeadm reset -f
 
 - name: Initialize Kubernetes Cluster
-  command: kubeadm init --control-plane-endpoint=172.31.84.54 --pod-network-cidr=10.244.0.0/16
+  # command: kubeadm init --control-plane-endpoint=172.31.84.54 --pod-network-cidr=10.244.0.0/16
+  
+  command: kubeadm init --control-plane-endpoint=74.208.50.183 --pod-network-cidr=10.244.0.0/16
   register: init_output
   failed_when: "'already initialized' not in init_output.stderr and init_output.rc != 0"
 
