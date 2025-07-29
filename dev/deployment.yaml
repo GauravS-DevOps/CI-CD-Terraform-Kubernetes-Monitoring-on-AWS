@@ -20,3 +20,5 @@ spec:
         image: gauravsdevops/devops-app:latest
         ports:
         - containerPort: 5000
+
+        
